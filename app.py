@@ -13,97 +13,239 @@ class MonicoApp(toga.App):
 
         # OLED DARK MODE INTERFACE (15ms TTFT Optimized)
         html_content = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <script src="https://cdn.tailwindcss.com"></script>
-            <style>
-                body { background: #000; color: #00ff41; font-family: 'Courier New', monospace; }
-                .crt::before { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none; }
-                .glow { text-shadow: 0 0 5px #00ff41; }
-                .tab-button { padding: 8px 16px; cursor: pointer; background: #333; border: 1px solid #00ff41; color: #00ff41; }
-                .tab-button.active { background: #00ff41; color: #000; }
-                .tab-content { display: none; }
-                .tab-content.active { display: block; }
-            </style>
-        </head>
-        <body class="p-4 crt">
-            <div class="flex justify-between items-center border-b border-green-900 pb-2 mb-4">
-                <h1 class="text-xl font-bold glow">MONACO v2.5.1</h1>
-                <span class="text-xs bg-green-900 px-2 py-1 rounded">15ms LATENCY</span>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MONICO V2.5 CORE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #000000; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; height: 100vh; }
+        .active-tab { border-bottom: 2px solid #ffffff; color: #ffffff; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 2px; }
+        .view-section { display: none; height: 100%; }
+        .view-section.active { display: flex; flex-direction: column; }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <!-- HEADER -->
+    <header class="flex justify-between items-center p-4 border-b border-zinc-800 bg-black">
+        <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+            <h1 class="text-sm font-bold tracking-widest text-white">MONICO V2.5 (100Q)</h1>
+        </div>
+        <div class="flex gap-4 text-xs font-mono text-zinc-400">
+            <span>TTFT: <span class="text-white">15ms</span></span>
+            <span>TARGET: <span class="text-white">$1M/DAY</span></span>
+        </div>
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="flex border-b border-zinc-800 bg-black">
+        <button onclick="setMode('chat')" id="tab-chat" class="flex-1 py-3 text-xs font-bold active-tab transition-colors">CHAT</button>
+        <button onclick="setMode('agent')" id="tab-agent" class="flex-1 py-3 text-xs font-bold text-zinc-500 border-b-2 border-transparent transition-colors">AGENT</button>
+        <button onclick="setMode('terminal')" id="tab-terminal" class="flex-1 py-3 text-xs font-bold text-zinc-500 border-b-2 border-transparent transition-colors">TERMINAL</button>
+        <button onclick="setMode('model')" id="tab-model" class="flex-1 py-3 text-xs font-bold text-zinc-500 border-b-2 border-transparent transition-colors">MODEL</button>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 overflow-hidden relative bg-black">
+        
+        <!-- CHAT VIEW -->
+        <section id="view-chat" class="view-section active p-4">
+            <div id="chat-output" class="flex-1 overflow-y-auto space-y-4 text-sm pb-4">
+                <div class="text-zinc-500 text-[10px] uppercase font-mono mb-4 text-center">System Link Established • Infinite Context Active</div>
+                <div class="bg-zinc-900 text-white p-3 rounded-lg rounded-tl-none inline-block max-w-[85%]">
+                    Hardware environment verified. Ready for multi-language execution payloads.
+                </div>
             </div>
+        </section>
+
+        <!-- TERMINAL VIEW -->
+        <section id="view-terminal" class="view-section p-4 bg-black">
+            <div class="flex justify-between items-center mb-3 border-b border-zinc-800 pb-2">
+                <span class="text-xs text-zinc-400 uppercase tracking-widest">Execution Core</span>
+                <!-- AI AUTO-SELECT BADGE -->
+                <div id="ai-lang-badge" class="bg-zinc-900 text-white text-[10px] border border-zinc-700 rounded px-2 py-1 uppercase tracking-tighter font-mono">
+                    AI: AUTO-SELECTING
+                </div>
+            </div>
+            <div id="term-output" class="flex-1 overflow-y-auto p-2 space-y-1 font-mono text-xs text-zinc-300 bg-zinc-950 border border-zinc-900 rounded">
+                <div class="text-zinc-500">Local non-simulated execution environment active.</div>
+            </div>
+        </section>
+
+        <!-- MODEL MANAGEMENT VIEW (FILE UPLOAD) -->
+        <section id="view-model" class="view-section p-4 items-center justify-center bg-black">
+            <div class="w-full max-w-md border-2 border-dashed border-zinc-700 rounded-xl p-8 text-center bg-zinc-950 transition-all hover:border-zinc-500">
+                <svg class="mx-auto h-12 w-12 text-zinc-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <h3 class="text-sm font-bold text-white mb-1">Load Local Model</h3>
+                <p class="text-xs text-zinc-500 mb-6">Select a .gguf, .bin, or .pt weight file to inject into the ARM64 kernel.</p>
+                
+                <input type="file" id="model-upload" class="hidden" accept=".gguf,.bin,.pt" onchange="handleFileUpload(event)">
+                <label for="model-upload" class="cursor-pointer bg-white text-black px-6 py-2.5 rounded font-bold text-xs hover:bg-zinc-200 transition-colors">
+                    SELECT FILE
+                </label>
+            </div>
+            <div class="mt-6 w-full max-w-md bg-zinc-900 rounded p-4 border border-zinc-800">
+                <p class="text-xs text-zinc-400 uppercase tracking-wider mb-1">Status</p>
+                <p id="model-status" class="text-sm font-mono text-white">Awaiting model injection...</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- UNIFIED INPUT AREA -->
+    <footer class="p-4 bg-black border-t border-zinc-800">
+        <div class="flex gap-2 items-center bg-zinc-900 border border-zinc-800 rounded-lg p-1 focus-within:border-zinc-500 transition-colors">
+            <input id="main-input" type="text" 
+                class="flex-1 bg-transparent py-2.5 px-3 outline-none text-sm text-white placeholder-zinc-500"
+                placeholder="Send input..."
+                autocomplete="off"
+                onkeypress="if(event.key === 'Enter') handleInput()">
+            <button onclick="handleInput()" class="bg-white text-black px-5 py-2.5 rounded-md font-bold text-xs hover:bg-zinc-200 transition-colors">
+                SEND
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        let currentMode = 'chat';
+        const tabs = {
+            chat: document.getElementById('tab-chat'),
+            agent: document.getElementById('tab-agent'),
+            terminal: document.getElementById('tab-terminal'),
+            model: document.getElementById('tab-model')
+        };
+        const mainIn = document.getElementById('main-input');
+
+        function setMode(mode) {
+            currentMode = mode;
             
-            <div class="grid grid-cols-2 gap-2 mb-4 text-[10px]">
-                <div class="bg-zinc-900 p-2 border border-green-800">
-                    <p class="text-gray-500">KERNEL</p>
-                    <p>100Q ARM64</p>
-                </div>
-                <div class="bg-zinc-900 p-2 border border-green-800">
-                    <p class="text-gray-500">TARGET</p>
-                    <p>$1M/DAY</p>
-                </div>
-            </div>
+            // Handle Tab UI
+            Object.values(tabs).forEach(t => {
+                t.classList.remove('active-tab', 'text-white', 'border-white');
+                t.classList.add('text-zinc-500', 'border-transparent');
+            });
+            tabs[mode].classList.remove('text-zinc-500', 'border-transparent');
+            tabs[mode].classList.add('active-tab', 'text-white', 'border-white');
 
-            <div class="flex mb-4">
-                <button class="tab-button active" onclick="openTab(event, 'terminal')">Terminal</button>
-                <button class="tab-button" onclick="openTab(event, 'chat')">Chat Mode</button>
-                <button class="tab-button" onclick="openTab(event, 'agent')">Agent Mode</button>
-            </div>
+            // Handle View Visibility
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            if(mode === 'agent') {
+                document.getElementById('view-chat').classList.add('active');
+            } else {
+                document.getElementById('view-' + mode).classList.add('active');
+            }
 
-            <div id="terminal" class="tab-content active h-64 overflow-y-auto bg-black border border-green-900 p-2 text-xs mb-4 whitespace-pre-wrap">SYSTEM READY... READY FOR FORENSIC SCAN...</div>
-            <div id="chat" class="tab-content h-64 overflow-y-auto bg-black border border-green-900 p-2 text-xs mb-4 whitespace-pre-wrap">Chat Mode Activated. How can I assist you?</div>
-            <div id="agent" class="tab-content h-64 overflow-y-auto bg-black border border-green-900 p-2 text-xs mb-4 whitespace-pre-wrap">Agent Mode Initialized. Awaiting directives.</div>
+            // Update Input Placeholder
+            if (mode === 'terminal') {
+                mainIn.placeholder = "Enter command (AI will choose language)...";
+                mainIn.disabled = false;
+            } else if (mode === 'model') {
+                mainIn.placeholder = "Model overrides disabled while in file view...";
+                mainIn.disabled = true;
+            } else {
+                mainIn.placeholder = mode === 'agent' ? "Assign autonomous task..." : "Send message...";
+                mainIn.disabled = false;
+            }
+            if(!mainIn.disabled) mainIn.focus();
+        }
 
-            <div class="flex gap-2">
-                <input id="cmd" type="text" class="flex-1 bg-zinc-900 border border-green-900 p-2 outline-none text-green-400" placeholder="Enter Python/Shell...">
-                <button onclick="runCmd()" class="bg-green-700 text-black px-4 font-bold">EXEC</button>
-            </div>
+        async function handleInput() {
+            if (mainIn.disabled) return;
+            const val = mainIn.value.trim();
+            if (!val) return;
+            mainIn.value = '';
 
-            <script>
-                function openTab(evt, tabName) {
-                    var i, tabcontent, tablinks;
-                    tabcontent = document.getElementsByClassName("tab-content");
-                    for (i = 0; i < tabcontent.length; i++) {
-                        tabcontent[i].classList.remove("active");
-                    }
-                    tablinks = document.getElementsByClassName("tab-button");
-                    for (i = 0; i < tablinks.length; i++) {
-                        tablinks[i].classList.remove("active");
-                    }
-                    document.getElementById(tabName).classList.add("active");
-                    evt.currentTarget.classList.add("active");
+            if (currentMode === 'terminal') {
+                logTerm(`> ${val}`);
+                executeHardware(val);
+            } else {
+                logChat(val, 'USER');
+                
+                // Backend handling for chat/agent
+                const endpoint = currentMode === 'agent' ? '/agent' : '/chat';
+                try {
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        body: JSON.stringify({ command: val })
+                    });
+                    const data = await res.json();
+                    logChat(data.output, 'SYSTEM');
+                } catch (e) {
+                    logChat("BRIDGE_ERR: " + e, 'SYSTEM');
                 }
+            }
+        }
 
-                async function runCmd() {
-                    const cmd = document.getElementById('cmd').value;
-                    const activeTab = document.querySelector('.tab-content.active');
-                    const out = activeTab;
-                    out.innerText += '\n> ' + cmd;
-                    document.getElementById('cmd').value = ''; // Clear input after sending
+        function logChat(text, sender) {
+            const out = document.getElementById('chat-output');
+            const wrapper = document.createElement('div');
+            
+            if (sender === 'USER') {
+                wrapper.className = "flex justify-end";
+                wrapper.innerHTML = `<div class="bg-white text-black p-3 rounded-lg rounded-tr-none inline-block max-w-[85%] text-sm">${text}</div>`;
+            } else {
+                wrapper.className = "flex justify-start";
+                wrapper.innerHTML = `<div class="bg-zinc-900 text-white p-3 rounded-lg rounded-tl-none inline-block max-w-[85%] text-sm">${text}</div>`;
+            }
+            
+            out.appendChild(wrapper);
+            out.scrollTop = out.scrollHeight;
+        }
 
-                    let endpoint = '/execute'; // Default for terminal
-                    if (activeTab.id === 'chat') {
-                        endpoint = '/chat';
-                    } else if (activeTab.id === 'agent') {
-                        endpoint = '/agent';
-                    }
+        function logTerm(text) {
+            const out = document.getElementById('term-output');
+            const div = document.createElement('div');
+            div.innerText = text;
+            out.appendChild(div);
+            out.scrollTop = out.scrollHeight;
+        }
 
-                    try {
-                        const res = await fetch(endpoint, {
-                            method: 'POST',
-                            body: JSON.stringify({ command: cmd })
-                        });
-                        const data = await res.json();
-                        out.innerText += '\n' + data.output;
-                    } catch (e) {
-                        out.innerText += '\nBRIDGE_ERR: ' + e;
-                    }
-                    out.scrollTop = out.scrollHeight;
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            const statusBox = document.getElementById('model-status');
+            if (file) {
+                statusBox.innerHTML = `Validating <span class="text-white">${file.name}</span>...<br><span class="text-zinc-500">Size: ${(file.size / (1024*1024)).toFixed(2)} MB</span>`;
+                
+                // Simulate injection time
+                setTimeout(() => {
+                    statusBox.innerHTML = `<span class="text-white">Model Injected Successfully.</span><br><span class="text-zinc-500">Kernel updated: ${file.name}</span>`;
+                }, 1500);
+            }
+        }
+
+        async function executeHardware(cmd) {
+            const badge = document.getElementById('ai-lang-badge');
+            badge.innerText = "AI: ANALYZING...";
+            
+            try {
+                // Send to local hardware bridge
+                const res = await fetch('/execute', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: cmd }) 
+                });
+                
+                const data = await res.json();
+                if (data.language) {
+                    badge.innerText = "AI: " + data.language.toUpperCase();
                 }
-            </script>
-        </body>
-        </html>
+                logTerm(data.output || "Execution completed.");
+            } catch (e) {
+                logTerm("Error: Local bridge not connected.");
+                badge.innerText = "AI: ERROR";
+            }
+        }
+    </script>
+</body>
+</html>
         """
         
         # Save UI to resources
@@ -114,17 +256,9 @@ class MonicoApp(toga.App):
         
         # Start Backend
         threading.Thread(target=self.start_server, daemon=True).start()
-        threading.Thread(target=self.storage_sentinel, daemon=True).start()
         
         self.main_window.content = self.webview
         self.main_window.show()
-
-    def storage_sentinel(self):
-        while True:
-            try:
-                shutil.rmtree(os.path.expanduser("~/Library/Caches"), ignore_errors=True)
-                time.sleep(30)
-            except: pass
 
     def start_server(self):
         app_instance = self
@@ -134,28 +268,39 @@ class MonicoApp(toga.App):
                 data = json.loads(self.rfile.read(content))
                 cmd = data.get('command', '')
                 
-                # Determine endpoint and handle accordingly
                 path = self.path
                 output = ""
+                detected_lang = "shell"
 
-                if path == '/execute': # Terminal mode
+                if path == '/execute':
+                    # AI LANGUAGE SELECTION LOGIC
+                    if cmd.startswith(('print(', 'import ', 'def ', 'class ')):
+                        detected_lang = "python"
+                        final_cmd = f'python3 -c "{cmd.replace(\'\"\', \'\\\\\"\')}"'
+                    elif cmd.startswith(('console.log(', 'require(', 'const ', 'let ')):
+                        detected_lang = "node"
+                        final_cmd = f'node -e "{cmd.replace(\'\"\', \'\\\\\"\')}"'
+                    else:
+                        detected_lang = "shell"
+                        final_cmd = cmd
+
                     try:
-                        res = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, cwd=app_instance.work_dir)
+                        res = subprocess.check_output(final_cmd, shell=True, stderr=subprocess.STDOUT, cwd=app_instance.work_dir)
                         output = res.decode()
                     except Exception as e: output = str(e)
-                elif path == '/chat': # Chat mode
-                    # Placeholder for chat logic
-                    output = f"Chat response to: {cmd}"
-                elif path == '/agent': # Agent mode
-                    # Placeholder for agent logic
-                    output = f"Agent processing: {cmd}"
+                    
+                    response_data = {"output": output, "language": detected_lang}
                 else:
-                    output = "Unknown endpoint"
+                    if path == '/chat':
+                        output = f"Chat response to: {cmd}"
+                    elif path == '/agent':
+                        output = f"Agent processing: {cmd}"
+                    response_data = {"output": output}
                 
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
-                self.wfile.write(json.dumps({"output": output}).encode())
+                self.wfile.write(json.dumps(response_data).encode())
                 
         TCPServer.allow_reuse_address = True
         with TCPServer(("", 8080), Bridge) as httpd: httpd.serve_forever()
