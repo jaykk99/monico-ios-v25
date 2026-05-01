@@ -22,6 +22,10 @@ class MonicoApp(toga.App):
                 body { background: #000; color: #00ff41; font-family: 'Courier New', monospace; }
                 .crt::before { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none; }
                 .glow { text-shadow: 0 0 5px #00ff41; }
+                .tab-button { padding: 8px 16px; cursor: pointer; background: #333; border: 1px solid #00ff41; color: #00ff41; }
+                .tab-button.active { background: #00ff41; color: #000; }
+                .tab-content { display: none; }
+                .tab-content.active { display: block; }
             </style>
         </head>
         <body class="p-4 crt">
@@ -41,7 +45,15 @@ class MonicoApp(toga.App):
                 </div>
             </div>
 
-            <div id="output" class="h-64 overflow-y-auto bg-black border border-green-900 p-2 text-xs mb-4 whitespace-pre-wrap">SYSTEM READY... READY FOR FORENSIC SCAN...</div>
+            <div class="flex mb-4">
+                <button class="tab-button active" onclick="openTab(event, 'terminal')">Terminal</button>
+                <button class="tab-button" onclick="openTab(event, 'chat')">Chat Mode</button>
+                <button class="tab-button" onclick="openTab(event, 'agent')">Agent Mode</button>
+            </div>
+
+            <div id="terminal" class="tab-content active h-64 overflow-y-auto bg-black border border-green-900 p-2 text-xs mb-4 whitespace-pre-wrap">SYSTEM READY... READY FOR FORENSIC SCAN...</div>
+            <div id="chat" class="tab-content h-64 overflow-y-auto bg-black border border-green-900 p-2 text-xs mb-4 whitespace-pre-wrap">Chat Mode Activated. How can I assist you?</div>
+            <div id="agent" class="tab-content h-64 overflow-y-auto bg-black border border-green-900 p-2 text-xs mb-4 whitespace-pre-wrap">Agent Mode Initialized. Awaiting directives.</div>
 
             <div class="flex gap-2">
                 <input id="cmd" type="text" class="flex-1 bg-zinc-900 border border-green-900 p-2 outline-none text-green-400" placeholder="Enter Python/Shell...">
@@ -49,12 +61,36 @@ class MonicoApp(toga.App):
             </div>
 
             <script>
+                function openTab(evt, tabName) {
+                    var i, tabcontent, tablinks;
+                    tabcontent = document.getElementsByClassName("tab-content");
+                    for (i = 0; i < tabcontent.length; i++) {
+                        tabcontent[i].classList.remove("active");
+                    }
+                    tablinks = document.getElementsByClassName("tab-button");
+                    for (i = 0; i < tablinks.length; i++) {
+                        tablinks[i].classList.remove("active");
+                    }
+                    document.getElementById(tabName).classList.add("active");
+                    evt.currentTarget.classList.add("active");
+                }
+
                 async function runCmd() {
                     const cmd = document.getElementById('cmd').value;
-                    const out = document.getElementById('output');
+                    const activeTab = document.querySelector('.tab-content.active');
+                    const out = activeTab;
                     out.innerText += '\n> ' + cmd;
+                    document.getElementById('cmd').value = ''; // Clear input after sending
+
+                    let endpoint = '/execute'; // Default for terminal
+                    if (activeTab.id === 'chat') {
+                        endpoint = '/chat';
+                    } else if (activeTab.id === 'agent') {
+                        endpoint = '/agent';
+                    }
+
                     try {
-                        const res = await fetch('/execute', {
+                        const res = await fetch(endpoint, {
                             method: 'POST',
                             body: JSON.stringify({ command: cmd })
                         });
@@ -98,11 +134,23 @@ class MonicoApp(toga.App):
                 data = json.loads(self.rfile.read(content))
                 cmd = data.get('command', '')
                 
-                # NATIVE EXECUTION (NON-SIMULATED)
-                try:
-                    res = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, cwd=app_instance.work_dir)
-                    output = res.decode()
-                except Exception as e: output = str(e)
+                # Determine endpoint and handle accordingly
+                path = self.path
+                output = ""
+
+                if path == '/execute': # Terminal mode
+                    try:
+                        res = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, cwd=app_instance.work_dir)
+                        output = res.decode()
+                    except Exception as e: output = str(e)
+                elif path == '/chat': # Chat mode
+                    # Placeholder for chat logic
+                    output = f"Chat response to: {cmd}"
+                elif path == '/agent': # Agent mode
+                    # Placeholder for agent logic
+                    output = f"Agent processing: {cmd}"
+                else:
+                    output = "Unknown endpoint"
                 
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
