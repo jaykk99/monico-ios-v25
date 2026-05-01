@@ -1,0 +1,33 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install Briefcase
+      run: pip install briefcase
+
+    - name: Build iOS app
+      run: briefcase build ios
+
+    - name: Upload IPA artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: Monico-iOS-IPA
+        path: dist/*.ipa

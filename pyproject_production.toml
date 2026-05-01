@@ -1,0 +1,15 @@
+[tool.briefcase]
+  project_name = "MonicoiOS"
+  bundle = "com.your_username.monicoios"
+  version = "2.5"
+  url = "https://your_username.com/monicoios"
+  license = "MIT"
+  
+  [tool.briefcase.app.monicoios]
+  requires = [
+      "toga-ios",
+  ]
+  
+  [tool.briefcase.app.monicoios.ios]
+  supported_devices = ["iPhone", "iPad"]
+  # Add other iOS-specific configurations here if needed

@@ -1,0 +1,15 @@
+[tool.briefcase]
+project_name = "monico-iOS"
+bundle = "com.monico"
+version = "2.5.1"
+display_name = "monico-iOS"
+author = "jaykk99"
+
+[tool.briefcase.app.monico-ios]
+formal_name = "monico-iOS"
+description = "Non-Simulated $1M/Day Execution"
+sources = ["app.py"]
+requires = ["toga-ios", "requests", "web3"]
+
+[tool.briefcase.app.monico-ios.ios]
+permissions = { "NSLocalNetworkUsageDescription" = "Hardware link for MonaCore V3." }
