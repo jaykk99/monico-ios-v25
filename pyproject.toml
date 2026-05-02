@@ -1,15 +1,20 @@
 [tool.briefcase]
-project_name = "monico-iOS"
-bundle = "com.monico"
-version = "2.5.1"
-display_name = "monico-iOS"
-author = "jaykk99"
+project_name = "MonicoiOS"
+bundle = "com.jaykk99.monicoios"
+version = "2.5"
+url = "https://github.com/jaykk99/monico-ios-v25"
+license = "MIT"
 
-[tool.briefcase.app.monico-ios]
-formal_name = "monico-iOS"
-description = "Non-Simulated $1M/Day Execution"
-sources = ["app.py"]
-requires = ["toga-ios", "requests", "web3"]
+[tool.briefcase.app.monicoios]
+formal_name = "Monico"
+description = "Monico iOS v2.5 - AI Powered Terminal"
+icon = "resources/monico"
+source_dir = "."
+requires = [
+    "toga-ios",
+    "microdot",
+    "requests",
+]
 
-[tool.briefcase.app.monico-ios.ios]
-permissions = { "NSLocalNetworkUsageDescription" = "Hardware link for MonaCore V3." }
+[tool.briefcase.app.monicoios.ios]
+supported_devices = ["iPhone", "iPad"]
