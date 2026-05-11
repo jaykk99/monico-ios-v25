@@ -1,16 +1,9 @@
-# How to Use Monico iOS v2.5.1
+# Monico iOS v25 [HARDENED]
 
-## 1. Build and Install via Scarlet
-1.  Go to the **Actions** tab in this repo.
-2.  Download the latest **Monico-iOS-IPA** artifact.
-3.  Open **Scarlet** on your iPhone and select "Sideload IPA".
-4.  Pick the downloaded file and install.
+High-performance software engineering engine for iOS.
 
-## 2. Features
-- **OLED Dark Mode**: Optimized for 15ms TTFT on Apple Silicon.
-- **MonaCoreV27**: High-performance recursive reasoning on-device.
-- **HealthGuard**: Strictly limits CPU usage to 25% to preserve battery and phone speed.
-- **Interactive Shell**: Real-time terminal for forensic code analysis.
+## Status: ACTIVE
 
---- 
-*Part of the Monico Project*
+- **Hardened Data Bridge**: Job ID system implemented.
+- **State Persistence**: System state tracked locally.
+- **Autonomous Cycle**: Ready for integration with Pharaoh Evolution.
