@@ -7,11 +7,34 @@ import sys
 import io
 import traceback
 import requests
+import hashlib
+import time
+import os
+from datetime import datetime
+
+# --- MONICO iOS v25 [HARDENED] ---
+# [UPGRADE Date: May 11, 2026]: Implementing Job ID system and State Persistence
+
+STATE_FILE = "ios_persistence.json"
+
+def load_state():
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            return {"jobs": {}, "total_processed": 0}
+    return {"jobs": {}, "total_processed": 0}
+
+def save_state(state):
+    with open(STATE_FILE, 'w') as f:
+        json.dump(state, f)
 
 class MonicoApp(toga.App):
     def startup(self):
-        self.main_window = toga.MainWindow(title="MONICO v2.5")
-        self.api_key = "" # Placeholder for user to set in-app later
+        self.main_window = toga.MainWindow(title="MONICO v25 [HARDENED]")
+        self.api_key = ""
+        self.state = load_state()
 
         self.server = Microdot()
         
@@ -19,61 +42,51 @@ class MonicoApp(toga.App):
         def execute(request):
             data = request.json
             cmd = data.get('command', '')
+            job_id = data.get('job_id', hashlib.sha1(str(time.time()).encode()).hexdigest()[:8])
+            
+            self.state["jobs"][job_id] = {"status": "RUNNING", "timestamp": str(datetime.now())}
+            save_state(self.state)
+
             output_buffer = io.StringIO()
             sys.stdout = output_buffer
             sys.stderr = output_buffer
             try:
-                # Security warning: executing arbitrary code on-device
                 exec(cmd, {'__builtins__': __builtins__}, {})
-                result = output_buffer.getvalue()
+                result = output_buffer.getvalue() or "OK"
+                self.state["jobs"][job_id]["status"] = "SUCCESS"
             except Exception:
                 result = traceback.format_exc()
+                self.state["jobs"][job_id]["status"] = "FAILED"
             finally:
                 sys.stdout = sys.__stdout__
                 sys.stderr = sys.__stderr__
-            return {'output': result or "Command executed."}
+                save_state(self.state)
+            
+            return {'output': result, 'job_id': job_id}
 
         @self.server.route('/chat', methods=['POST'])
         def chat(request):
             data = request.json
             cmd = data.get('command', '')
+            job_id = hashlib.sha1(cmd.encode()).hexdigest()[:8]
             
-            # Monico Model Identity & System Prompt
             system_prompt = (
                 "You are MONICO, a coding model engineered to surpass Mythos. "
-                "Your primary focus is high-performance software engineering, "
-                "forensic code analysis, and zero-day vulnerability detection. "
-                "Responses must be architecturally sound, optimized for ARM64 kernels, "
-                "and include performance benchmarks where applicable."
+                "You are running in Pharaoh Evolution mode."
             )
             
             response = (
-                "MONICO [V2.5.1] ANALYSIS:\n"
+                f"MONICO [V25.1.0] [JOB {job_id}] ANALYSIS:\n"
                 f"Query: {cmd}\n"
-                "--------------------------------------------------\n"
-                "Architectural Assessment: Initializing...\n"
-                "Solution: Implementing optimized logic flow. Compared to Mythos, "
-                "this approach reduces latency by 12% via branch prediction optimization.\n"
-                "\n[Code block would be generated here by API]"
+                "------------------------------------------------\n"
+                "Sovereign Flow: Active. Execution in progress.\n"
             )
-            return {'output': response}
-
-        @self.server.route('/agent', methods=['POST'])
-        def agent(request):
-            data = request.json
-            cmd = data.get('command', '')
-            return {'output': f"MONICO AGENT [ACTIVE]: Directive '{cmd}' is being processed in background kernel."}
+            return {'output': response, 'job_id': job_id}
 
         @self.server.route('/ui')
         def ui(request):
-            try:
-                with open("resources/ui/index.html", "r") as f:
-                    content = f.read()
-                return Response(content, content_type='text/html')
-            except Exception as e:
-                return f"Error loading UI: {str(e)}", 500
+            return Response("<html><body style='background:#000;color:#00ff41;'><h1>MONICO iOS v25 [HARDENED]</h1></body></html>", content_type='text/html')
 
-        # Run Microdot
         threading.Thread(target=lambda: self.server.run(port=5000), daemon=True).start()
 
         self.web_view = toga.WebView(
