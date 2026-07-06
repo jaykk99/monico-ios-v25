@@ -1,11 +1,11 @@
-VERSION = 'v28.PHARAOH'
+VERSION = 'v29.PHARAOH'
 APP_ID = 'monico-ios-pharaoh'
 
 class IOSDataBridge:
     def __init__(self):
         self.state_persistence = {}
         self.encryption_active = True
-        print("iOS Data Bridge & State Persistence Hardened with V28 Encryption and Sovereign State.")
+        print("iOS Data Bridge & State Persistence Hardened with V29 Sovereign-State-V2 and Job-ID-V35 persistence.")
 
     def secure_save(self, job_id, payload):
         print(f"Encrypting and Securing Job ID {job_id}...")
@@ -16,10 +16,10 @@ class IOSAutonomousFactory:
     def execute(self):
         steps = ["Ingestion", "Audit", "Decree", "Settlement"]
         for step in steps:
-            print(f"iOS Factory V28: Executing {step} Evolution...")
+            print(f"iOS Factory V29: Executing {step} Evolution...")
 
 # Legacy compatibility
-v = "v28"
+v = "v29"
 
 if __name__ == "__main__":
     bridge = IOSDataBridge()
