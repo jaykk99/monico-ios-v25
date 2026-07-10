@@ -1,13 +1,13 @@
 # Monico iOS App
-# Version: v38.PHARAOH
-# Shield: Sentinel Shield v16
-# Persistence: Sovereign-State-V5 Encryption
+# Version: v39.PHARAOH
+# Shield: Sentinel Shield v17
+# Persistence: Sovereign-State-V6 Encryption
 
 class MonicoIOS:
     def __init__(self):
-        self.version = "v38.PHARAOH"
-        self.encryption = "Sovereign-State-V5"
-        self.persistence = "Job ID Persistence System V6"
+        self.version = "v39.PHARAOH"
+        self.encryption = "Sovereign-State-V6"
+        self.persistence = "Job ID Persistence System V7"
 
     def harden_persistence(self):
         print(f"[{self.encryption}] Hardening state persistence...")
