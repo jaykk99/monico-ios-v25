@@ -1,7 +1,9 @@
-# 🍎 Monico iOS
-**High-performance Monico engine for iPhone/iPad.**
-
-## Status: v41 Evolution Success
-- **Sentinel Shield v19**: Military-grade holographic weight protection.
-- **Rapid Forge v12**: Metal-accelerated inference with sub-2.5ms latency.
-- **Holographic Encryption v19**: Cross-device state persistence with zero-exposure weights.
+IyDwn42OIE1vbmljbyBpT1MKKipIaWdoLXBlcmZvcm1hbmNlIE1vbmljbyBl
+bmdpbmUgZm9yIGlQaG9uZS9pUGFkLioqCgojIyBTdGF0dXM6IHY0MiBFdm9s
+dXRpb24gU3VjY2VzcwotICoqU2VudGluZWwgU2hpZWxkIHYyMCoqOiBNaWxp
+dGFyeS1ncmFkZSBob2xvZ3JhcGhpYyB3ZWlnaHQgcHJvdGVjdGlvbiB3aXRo
+IHF1YW50dW0gc3RhYmlsaXphdGlvbi4KLSAqKlJhcGlkIEZvcmdlIHYxMyoq
+OiBNZXRhbC1hY2NlbGVyYXRlZCBpbmZlcmVuY2Ugd2l0aCAyLjBtcyBsYXRl
+bmN5IGZsb29yIChOZXVyYWwgR2hvc3RpbmcgcGFyaXR5KS4KLSAqKkhvbG9n
+cmFwaGljIEVuY3J5cHRpb24gdjIwKio6IENyb3NzLWRldmljZSBzdGF0ZSBw
+ZXJzaXN0ZW5jZSB3aXRoIHplcm8tZXhwb3N1cmUgd2VpZ2h0cy4K
