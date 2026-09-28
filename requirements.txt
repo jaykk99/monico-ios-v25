@@ -1,2 +1,4 @@
 toga-ios
+microdot
 requests
+psutil

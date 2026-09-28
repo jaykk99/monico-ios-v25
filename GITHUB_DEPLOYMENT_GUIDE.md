@@ -6,19 +6,12 @@ This guide details the process of setting up your GitHub repository for the Moni
 
 This phase involves preparing your application files, initializing a Git repository, pushing your code to GitHub, and setting up a Continuous Integration/Continuous Deployment (CI/CD) workflow using GitHub Actions.
 
-### Step 1: Copy Production Files
+### Step 1: Verify the app files
 
-Before pushing to GitHub, ensure that your production-ready application files are in their correct locations. This involves copying the `app_production.py`, `index_production.html`, and `pyproject_production.toml` files.
-
-```bash
-cp app_production.py app.py
-cp index_production.html resources/ui/index.html
-cp pyproject_production.toml pyproject.toml
-```
-
-*   `app.py`: This will be the main Python application file.
-*   `resources/ui/index.html`: This file contains the user interface for your application.
-*   `pyproject.toml`: This file holds the project configuration, particularly for Briefcase, which is used for packaging the iOS app.
+The repository is already live at `https://github.com/jaykk99/monico-ios-v25`.
+`app.py`, `pyproject.toml`, and `resources/ui/index.html` are the source of
+truth — there is no separate "production copy" step. Do **not** overwrite them
+with placeholder files.
 
 ### Step 2: Initialize Git Repository and Push to GitHub
 
@@ -40,24 +33,15 @@ This sequence of commands will:
 4.  `git remote add origin https://github.com/YOUR_USERNAME/monico-ios.git`: Add a new remote repository named `origin` with the specified URL. You will need to create this repository on GitHub first.
 5.  `git push -u origin main`: Push your committed changes from your local `main` branch to the `main` branch of your `origin` remote repository. The `-u` flag sets the `origin/main` as the upstream branch, allowing you to use `git push` and `git pull` without specifying the remote and branch in the future.
 
-### Step 3: Add GitHub Actions Workflow
+### Step 3: GitHub Actions Workflow
 
-To automate the build process and enable Continuous Integration, you will add a GitHub Actions workflow. This workflow will automatically build your iOS application whenever changes are pushed to the `main` branch or a pull request is opened against it.
+The CI/CD workflow already lives at `.github/workflows/ios_build.yml` and runs
+the iOS build on `macos-latest` on every push. No setup step needed — just push:
 
 ```bash
-mkdir -p .github/workflows
-cp .github_workflows_build.yml .github/workflows/build.yml
-git add .github/workflows/build.yml
-git commit -m "Add CI/CD"
+git add -A
+git commit -m "Your change"
 git push
 ```
-
-This will:
-
-1.  `mkdir -p .github/workflows`: Create the necessary directory structure for GitHub Actions workflows.
-2.  `cp .github_workflows_build.yml .github/workflows/build.yml`: Copy the provided CI/CD workflow file into the GitHub Actions directory.
-3.  `git add .github/workflows/build.yml`: Stage the new workflow file.
-4.  `git commit -m "Add CI/CD"`: Commit the workflow file with a message indicating the addition of CI/CD.
-5.  `git push`: Push the new commit to your GitHub repository.
 
 After these steps, your GitHub repository will be fully set up, and the GitHub Actions workflow will be ready to build your Monico-iOS application automatically.

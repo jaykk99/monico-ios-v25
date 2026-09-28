@@ -8,12 +8,12 @@ license = "MIT"
 [tool.briefcase.app.monicoios]
 formal_name = "Monico"
 description = "Monico iOS v2.5 - AI Powered Terminal"
-icon = "resources/monico"
 source_dir = "."
 requires = [
     "toga-ios",
     "microdot",
     "requests",
+    "psutil",
 ]
 
 [tool.briefcase.app.monicoios.ios]

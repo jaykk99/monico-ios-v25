@@ -18,11 +18,11 @@ This document provides a quick reference for common commands and important files
 
 ## Critical Files
 
-*   `app.py`: Main application logic (copied from `app_production.py`)
-*   `resources/ui/index.html`: User interface (copied from `index_production.html`)
-*   `pyproject.toml`: Project configuration for Briefcase (copied from `pyproject_production.toml`)
-*   `requirements.txt`: Python dependencies
-*   `.github/workflows/build.yml`: GitHub Actions CI/CD workflow
+*   `app.py`: Main application logic (Toga app + Microdot server)
+*   `resources/ui/index.html`: Standalone copy of the terminal UI
+*   `pyproject.toml`: Project configuration for Briefcase
+*   `requirements.txt`: Python dependencies (toga-ios, microdot, requests, psutil)
+*   `.github/workflows/ios_build.yml`: GitHub Actions CI/CD workflow
 
 ## Deployment Phases Overview
 

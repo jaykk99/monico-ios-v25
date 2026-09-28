@@ -2,15 +2,11 @@
 
 This guide provides a 3-step setup process to get your Monico-iOS project ready for deployment.
 
-## Step 1: Prepare Production Files
+## Step 1: Verify the app files
 
-First, copy the production-ready files to their active locations:
-
-```bash
-cp app_production.py app.py
-cp index_production.html resources/ui/index.html
-cp pyproject_production.toml pyproject.toml
-```
+`app.py`, `pyproject.toml`, and `resources/ui/index.html` are the source of
+truth — there is no separate "production copy" step and no placeholder files
+to copy over them.
 
 ## Step 2: Initialize and Push to GitHub
 
@@ -24,15 +20,14 @@ git remote add origin https://github.com/YOUR_USERNAME/monico-ios.git
 git push -u origin main
 ```
 
-## Step 3: Add CI/CD Workflow
+## Step 3: CI/CD is already wired
 
-Finally, set up your GitHub Actions workflow for continuous integration and deployment:
+The GitHub Actions workflow at `.github/workflows/ios_build.yml` builds the
+iOS app on `macos-latest` on every push. Nothing to copy — just push:
 
 ```bash
-mkdir -p .github/workflows
-cp .github_workflows_build.yml .github/workflows/build.yml
-git add .github/workflows/build.yml
-git commit -m "Add CI/CD"
+git add -A
+git commit -m "Your change"
 git push
 ```
 
