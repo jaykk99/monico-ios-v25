@@ -1,4 +1,7 @@
-toga-ios
+# Desktop testing: `toga` meta-package pulls the right backend per platform
+# (Cocoa on macOS, GTK on Linux). The iOS build uses Briefcase + pyproject.toml,
+# which correctly pins `toga-ios` for the iOS target.
+toga
 microdot
 requests
 psutil
