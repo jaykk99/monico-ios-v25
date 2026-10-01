@@ -18,10 +18,10 @@ This document provides a quick reference for common commands and important files
 
 ## Critical Files
 
-*   `app.py`: Main application logic (Toga app + Microdot server)
-*   `resources/ui/index.html`: Standalone copy of the terminal UI
+*   `src/monicoios/app.py`: Toga app + Microdot server + API routes
+*   `src/monicoios/resources/ui/`: app UI, desktop preview, standalone copy
 *   `pyproject.toml`: Project configuration for Briefcase
-*   `requirements.txt`: Python dependencies (toga-ios, microdot, requests, psutil)
+*   `requirements.txt`: Python dependencies (toga, microdot, psutil)
 *   `.github/workflows/ios_build.yml`: GitHub Actions CI/CD workflow
 
 ## Deployment Phases Overview

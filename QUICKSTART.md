@@ -4,7 +4,7 @@ This guide provides a 3-step setup process to get your Monico-iOS project ready 
 
 ## Step 1: Verify the app files
 
-`app.py`, `pyproject.toml`, and `resources/ui/index.html` are the source of
+`app.py`, `pyproject.toml`, and `src/monicoios/` are the source of
 truth — there is no separate "production copy" step and no placeholder files
 to copy over them.
 
@@ -15,7 +15,7 @@ Next, initialize your Git repository, add your files, commit them, and push to G
 ```bash
 git init
 git add .
-git commit -m "Initial: MONICO iOS v2.5"
+git commit -m "Initial: MONICO iOS v4.3"
 git remote add origin https://github.com/YOUR_USERNAME/monico-ios.git
 git push -u origin main
 ```

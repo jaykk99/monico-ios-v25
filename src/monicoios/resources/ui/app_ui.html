@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Monico</title>
+<style>
+  :root {
+    --grn: #00ff41; --grn-dim: #00cc33; --bg: #000; --panel: #0a0f0a;
+    --line: #0f3d1a; --txt: #c9f5d3; --mut: #5c7a64;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--txt);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    display: flex; flex-direction: column; overflow: hidden;
+    padding-top: env(safe-area-inset-top);
+  }
+  /* scanline overlay */
+  body::after {
+    content: " "; position: fixed; inset: 0; pointer-events: none; z-index: 50;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px);
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  header .logo { color: var(--grn); font-weight: 800; letter-spacing: 2px;
+    text-shadow: 0 0 8px rgba(0,255,65,.6); font-size: 17px; }
+  header .ver { color: var(--mut); font-size: 11px; margin-left: 8px; }
+  #healthdot { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--mut); }
+  #healthdot .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--grn);
+    box-shadow: 0 0 6px var(--grn); }
+  #healthdot.warn .dot { background: #ffb300; box-shadow: 0 0 6px #ffb300; }
+  main { flex: 1; overflow: hidden; position: relative; }
+  .tab { display: none; height: 100%; overflow-y: auto; padding: 12px 14px 20px; }
+  .tab.active { display: block; }
+  /* terminal */
+  #term-out { white-space: pre-wrap; word-break: break-word; font-size: 13px;
+    line-height: 1.5; min-height: 60%; }
+  #term-out .cmd { color: var(--grn); font-weight: 700; }
+  #term-out .resp { color: var(--txt); opacity: .85; }
+  #term-out .sysmsg { color: var(--mut); }
+  #term-out .err { color: #ff5d5d; }
+  .inputrow { display: flex; align-items: center; gap: 8px; margin-top: 10px;
+    border: 1px solid var(--line); background: var(--panel); padding: 10px 12px;
+    border-radius: 10px; position: sticky; bottom: 0; }
+  .inputrow .prompt { color: var(--grn); font-weight: 800; }
+  #cmd { flex: 1; background: transparent; border: none; outline: none;
+    color: var(--txt); font: inherit; font-size: 14px; }
+  /* forensics */
+  .scanbtn { display: block; width: 100%; padding: 14px; margin: 4px 0 14px;
+    background: var(--grn); color: #000; border: none; border-radius: 10px;
+    font: inherit; font-weight: 800; letter-spacing: 1px; cursor: pointer; }
+  .scanbtn:active { transform: scale(.98); }
+  .scanbtn:disabled { opacity: .5; }
+  table.proc { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.proc th { text-align: left; color: var(--mut); font-weight: 400;
+    border-bottom: 1px solid var(--line); padding: 6px 4px; }
+  table.proc td { border-bottom: 1px solid #0a1f10; padding: 6px 4px; }
+  table.proc td.num { text-align: right; color: var(--grn); }
+  .kv { display: flex; justify-content: space-between; font-size: 12px;
+    padding: 7px 0; border-bottom: 1px solid #0a1f10; }
+  .kv .k { color: var(--mut); } .kv .v { color: var(--grn); }
+  h2.sect { color: var(--grn); font-size: 12px; letter-spacing: 2px; margin: 16px 0 6px; }
+  /* system cards */
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .card .k { font-size: 10px; color: var(--mut); letter-spacing: 1px; }
+  .card .v { font-size: 16px; color: var(--grn); margin-top: 4px; font-weight: 700; }
+  .bar { height: 6px; background: #0a1f10; border-radius: 3px; margin-top: 8px; overflow: hidden; }
+  .bar > div { height: 100%; background: var(--grn); border-radius: 3px;
+    box-shadow: 0 0 8px rgba(0,255,65,.7); transition: width .4s; }
+  /* bottom tab bar */
+  nav.tabbar { display: flex; border-top: 1px solid var(--line); background: var(--panel);
+    padding-bottom: env(safe-area-inset-bottom); }
+  nav.tabbar button { flex: 1; background: none; border: none; color: var(--mut);
+    font: inherit; font-size: 10px; letter-spacing: 1px; padding: 10px 0 8px; cursor: pointer; }
+  nav.tabbar button .ico { display: block; font-size: 20px; margin-bottom: 2px; }
+  nav.tabbar button.active { color: var(--grn); }
+</style>
+</head>
+<body>
+<header>
+  <div><span class="logo">MONICO</span><span class="ver">v4.3.0</span></div>
+  <div id="healthdot"><span class="dot"></span><span id="healthtxt">…</span></div>
+</header>
+<main>
+  <section id="tab-terminal" class="tab active">
+    <div id="term-out"></div>
+    <div class="inputrow"><span class="prompt">$</span>
+      <input id="cmd" type="text" autocomplete="off" autocapitalize="off"
+             spellcheck="false" placeholder="type 'help' to begin">
+    </div>
+  </section>
+  <section id="tab-forensics" class="tab">
+    <button class="scanbtn" id="scanbtn" onclick="runScan()">▶ RUN FORENSIC SCAN</button>
+    <div id="scan-out"><p class="sysmsg" style="font-size:12px;color:var(--mut)">
+      On-device scan: process table, network connections, disk usage.<br>
+      Nothing leaves this device.</p></div>
+  </section>
+  <section id="tab-system" class="tab">
+    <div class="cards" id="syscards"></div>
+    <h2 class="sect">LIVE LOAD</h2>
+    <div class="kv"><span class="k">CPU</span><span class="v" id="cpupct">–</span></div>
+    <div class="bar"><div id="cpubar" style="width:0%"></div></div>
+    <div class="kv" style="margin-top:8px"><span class="k">MEMORY</span><span class="v" id="mempct">–</span></div>
+    <div class="bar"><div id="membar" style="width:0%"></div></div>
+    <div id="sysdetail" style="margin-top:14px"></div>
+  </section>
+</main>
+<nav class="tabbar">
+  <button id="link-terminal" class="active" onclick="openTab('terminal')">
+    <span class="ico">⌁</span>TERMINAL</button>
+  <button id="link-forensics" onclick="openTab('forensics')">
+    <span class="ico">◉</span>FORENSICS</button>
+  <button id="link-system" onclick="openTab('system')">
+    <span class="ico">⚙</span>SYSTEM</button>
+</nav>
+<script>
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function openTab(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tabbar button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  document.getElementById('link-'+id).classList.add('active');
+  if(id==='system') refreshSystem();
+  if(id==='terminal') document.getElementById('cmd').focus();
+}
+/* terminal */
+const termOut=document.getElementById('term-out'), cmdEl=document.getElementById('cmd');
+const hist=[]; let hi=-1;
+function print(html,cls){const d=document.createElement('div');if(cls)d.className=cls;d.innerHTML=html;
+  termOut.appendChild(d);const t=document.getElementById('tab-terminal');t.scrollTop=t.scrollHeight;}
+async function sendCmd(){
+  const val=cmdEl.value.trim(); if(!val) return;
+  hist.push(val); hi=hist.length; cmdEl.value='';
+  print('$ '+esc(val),'cmd');
+  if(val.toLowerCase()==='clear'){termOut.innerHTML='';return;}
+  try{
+    const r=await fetch('/api/execute',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({command:val})});
+    const d=await r.json();
+    print(esc(d.output),'resp');
+  }catch(e){print('BRIDGE_ERR: '+esc(e.message||e),'err');}
+}
+cmdEl.addEventListener('keydown',e=>{
+  if(e.key==='Enter')sendCmd();
+  else if(e.key==='ArrowUp'){if(hi>0){hi--;cmdEl.value=hist[hi]||'';}e.preventDefault();}
+  else if(e.key==='ArrowDown'){if(hi<hist.length-1){hi++;cmdEl.value=hist[hi];}else{hi=hist.length;cmdEl.value='';}e.preventDefault();}
+});
+print('MONICO iOS v4.3.0 — on-device engine ready.','sysmsg');
+print("Type 'help' for commands.",'sysmsg');
+/* forensics */
+async function runScan(){
+  const btn=document.getElementById('scanbtn'), out=document.getElementById('scan-out');
+  btn.disabled=true; btn.textContent='SCANNING…';
+  try{
+    const r=await fetch('/api/forensics'); const d=await r.json();
+    let h='<h2 class="sect">SCAN '+esc(d.scanned_at)+'</h2>';
+    h+='<div class="kv"><span class="k">PROCESSES</span><span class="v">'+d.process_count+'</span></div>';
+    h+='<div class="kv"><span class="k">NET CONNECTIONS</span><span class="v">'+
+       (d.network_connections<0?'restricted':d.network_connections)+'</span></div>';
+    h+='<div class="kv"><span class="k">DISK</span><span class="v">'+d.disk_used_gb+' / '+d.disk_total_gb+' GB</span></div>';
+    h+='<h2 class="sect">TOP PROCESSES BY CPU</h2><table class="proc"><tr><th>PID</th><th>NAME</th><th style="text-align:right">CPU%</th><th style="text-align:right">MEM%</th></tr>';
+    for(const p of d.top_processes){
+      h+='<tr><td>'+p.pid+'</td><td>'+esc(p.name||'?')+'</td><td class="num">'+p.cpu_percent+'</td><td class="num">'+p.memory_percent+'</td></tr>';
+    }
+    out.innerHTML=h+'</table>';
+  }catch(e){out.innerHTML='<p class="err">SCAN FAILED: '+esc(e.message||e)+'</p>';}
+  btn.disabled=false; btn.textContent='▶ RUN FORENSIC SCAN';
+}
+/* system */
+async function refreshSystem(){
+  try{
+    const [s,h]=await Promise.all([(await fetch('/api/system')).json(),(await fetch('/api/health')).json()]);
+    document.getElementById('syscards').innerHTML=
+      card('PLATFORM',esc(s.platform)+' '+esc(s.platform_release))+
+      card('ARCH',esc(s.arch))+
+      card('CPU CORES',s.cpu_count+' ('+s.cpu_physical+' phys)')+
+      card('RAM',s.mem_used_gb+' / '+s.mem_total_gb+' GB')+
+      card('DISK FREE',s.disk_free_gb+' GB')+
+      card('PYTHON',esc(s.python));
+    document.getElementById('cpupct').textContent=h.cpu+'%';
+    document.getElementById('cpubar').style.width=Math.min(100,h.cpu)+'%';
+    document.getElementById('mempct').textContent=h.memory+'%';
+    document.getElementById('membar').style.width=Math.min(100,h.memory)+'%';
+    document.getElementById('sysdetail').innerHTML=
+      '<h2 class="sect">DETAIL</h2>'+
+      '<div class="kv"><span class="k">BOOT TIME</span><span class="v">'+esc(s.boot_time)+'</span></div>'+
+      '<div class="kv"><span class="k">APP UPTIME</span><span class="v">'+s.uptime_s+'s</span></div>'+
+      '<div class="kv"><span class="k">GUARD STATUS</span><span class="v">'+esc(h.status)+'</span></div>';
+  }catch(e){/* offline - keep last values */}
+}
+function card(k,v){return '<div class="card"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';}
+setInterval(refreshSystem,2000);
+async function pollHealthDot(){
+  try{
+    const h=await (await fetch('/api/health')).json();
+    const el=document.getElementById('healthdot');
+    el.classList.toggle('warn',h.status!=='OPTIMAL');
+    document.getElementById('healthtxt').textContent=h.status+' '+h.cpu+'%';
+  }catch(e){document.getElementById('healthtxt').textContent='OFFLINE';}
+}
+setInterval(pollHealthDot,5000); pollHealthDot();
+</script>
+</body>
+</html>

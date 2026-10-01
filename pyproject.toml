@@ -1,20 +1,20 @@
 [tool.briefcase]
 project_name = "MonicoiOS"
 bundle = "com.jaykk99.monicoios"
-version = "2.5"
+version = "4.3.0"
 url = "https://github.com/jaykk99/monico-ios-v25"
 license = "MIT"
 
 [tool.briefcase.app.monicoios]
 formal_name = "Monico"
-description = "Monico iOS v2.5 - AI Powered Terminal"
-source_dir = "."
+description = "Monico iOS v4.3 - On-device AI terminal"
+sources = ["src/monicoios"]
+main_module = "monicoios.app"
 requires = [
     "toga-ios",
     "microdot",
-    "requests",
     "psutil",
 ]
+supported_devices = ["iPhone", "iPad"]
 
 [tool.briefcase.app.monicoios.ios]
-supported_devices = ["iPhone", "iPad"]

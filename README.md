@@ -3,40 +3,72 @@
 **Monico terminal for iPhone/iPad** — a Python/Toga mobile app with an embedded
 local web server (Microdot) serving a tabbed terminal UI (Terminal, Forensics, System).
 
-## Status: v4.2.1 (Briefcase/Toga app)
+## Status: v4.3.0 (Briefcase/Toga app)
 
 ## What it actually is
-- `app.py` — Toga app: opens a `toga.WebView` pointed at a local Microdot server on port 5000.
-- `POST /api/execute` — sends a command string to the built-in `MonaCoreV27` engine, which returns a canned status line (there is no external AI model call; it works fully offline and keyless).
-- `GET /api/health` — CPU usage via `psutil`; reports `OPTIMAL` under 25% CPU, `THROTTLING` above.
+- `src/monicoios/app.py` — Toga app: opens a `toga.WebView` pointed at a local
+  Microdot server bound to **127.0.0.1:5000** (never exposed on the LAN).
+- `POST /api/execute` — sends a command string to the on-device `MonaCore`
+  engine. Built-in commands: `help`, `health`, `sysinfo`, `about`, `clear`.
+  Input is length-capped (500 chars) and all output is HTML-escaped.
+  No external AI model call; works fully offline and keyless.
+- `GET /api/health` — CPU/memory via `psutil`; `OPTIMAL` under 25% CPU,
+  `THROTTLING` above (iOS thermal guard).
+- `GET /api/system` — real device info: platform, arch, CPU counts, RAM,
+  disk, Python version, uptime.
+- `GET /api/forensics` — real on-device scan: process table ranked by CPU,
+  network connection count, disk usage.
+- `/` — the app UI (`src/monicoios/resources/ui/app_ui.html`): iOS-style
+  terminal with command history, forensic scanner, and live system gauges.
+  **Zero CDN dependencies** — renders fully offline inside the iOS WebView.
+- `/preview` — desktop showcase page: the live app inside a phone frame,
+  feature cards, and build instructions.
 - `health_guard.py` — standalone CPU health checker (`python health_guard.py`).
 
 ## Run locally (desktop, for UI testing)
 ```bash
 pip install -r requirements.txt
-python app.py        # serves the UI at http://localhost:5000
+python app.py        # serves the UI at http://127.0.0.1:5000
+python app.py        # without a Toga GUI backend it just serves the web UI
 python health_guard.py
+pytest tests/ -q     # 14 tests: API routes, UI assets, health guard
 ```
+
+Open http://127.0.0.1:5000/preview for the polished showcase.
 
 ## Build for iOS
 Requires macOS + Xcode (Briefcase cannot build iOS targets on Linux):
+
 ```bash
 pip install briefcase
 briefcase create ios
 briefcase build ios
 briefcase run ios
 ```
-A GitHub Actions workflow (`.github/workflows/ios_build.yml`) builds the IPA on `macos-latest` on every push.
+The package layout is Briefcase-standard: sources live in
+`src/monicoios/` (`main_module = "monicoios.app"`), so `briefcase create`
+packages the Python code **and** the `resources/ui/` HTML assets into the
+app bundle (verified via a Linux `briefcase create` packaging run).
+
+A GitHub Actions workflow (`.github/workflows/ios_build.yml`) builds the IPA
+on `macos-latest` on every push.
 
 ## Files
 | File | Purpose |
 |---|---|
-| `app.py` | Toga app + Microdot server + inline terminal UI |
+| `app.py` | Desktop/dev entry point (imports `monicoios.app`) |
+| `src/monicoios/app.py` | Toga app + Microdot server + API routes |
+| `src/monicoios/resources/ui/app_ui.html` | Canonical app UI (served at `/`) |
+| `src/monicoios/resources/ui/preview.html` | Desktop showcase (served at `/preview`) |
+| `src/monicoios/resources/ui/index.html` | Standalone copy of the app UI |
 | `health_guard.py` | CPU guard (25% limit on iOS) |
-| `resources/ui/index.html` | Standalone copy of the terminal UI |
-| `index_production.html` | Alternate production UI variant |
+| `tests/test_app.py` | Pytest suite (14 tests) |
 | `monico_diag_report.json` | Last diagnostic snapshot (informational) |
 
 ## Notes
 - No API keys required; everything runs on-device.
-- `toga.WebView` needs a real iOS device/simulator — `python app.py` on desktop opens the native window if Toga supports your platform.
+- No Swift/SwiftUI in this repo: the "native" app is Python via
+  BeeWare Toga/Briefcase, rendered in a `WebView`. It cannot be compiled
+  or run on iOS without macOS + Xcode (or the CI-built IPA).
+- `toga.WebView` needs a real iOS device/simulator — `python app.py` on a
+  desktop without a Toga GUI backend serves the web UI directly instead.

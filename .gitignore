@@ -1,0 +1,4 @@
+build/
+.briefcase/
+__pycache__/
+*.pyc
