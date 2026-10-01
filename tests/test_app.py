@@ -182,6 +182,25 @@ def test_server_bound_to_localhost():
     assert app.PORT == 5000
 
 
+def test_briefcase_main_module_resolves():
+    """The iOS backend calls app.main_module(); it must stay a method
+    returning the module name run as __main__ by the iOS bootstrap."""
+    from briefcase.config import AppConfig
+    cfg = AppConfig(
+        app_name="monicoios",
+        formal_name="Monico",
+        version="4.3.0",
+        bundle="com.jaykk99.monicoios",
+        description="test",
+        sources=["src/monicoios"],
+        test_mode=False,
+    )
+    assert cfg.main_module() == "monicoios"
+    assert callable(AppConfig.main_module)
+    # and the module run as __main__ exists with a startable entry
+    import monicoios.__main__  # noqa: F401
+
+
 def test_degraded_mode_without_psutil(monkeypatch):
     """Simulates iOS where psutil has no wheels: endpoints must not 500."""
     monkeypatch.setattr(app, "psutil", None)

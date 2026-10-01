@@ -46,7 +46,8 @@ briefcase build ios
 briefcase run ios
 ```
 The package layout is Briefcase-standard: sources live in
-`src/monicoios/` (`main_module = "monicoios.app"`), so `briefcase create`
+`src/monicoios/` with `src/monicoios/__main__.py` as the entry point (the iOS
+bootstrap runs the `MainModule` as `__main__`), so `briefcase create`
 packages the Python code **and** the `resources/ui/` HTML assets into the
 app bundle (verified via a Linux `briefcase create` packaging run).
 

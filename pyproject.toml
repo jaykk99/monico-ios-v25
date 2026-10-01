@@ -9,7 +9,6 @@ license = "MIT"
 formal_name = "Monico"
 description = "Monico iOS v4.3 - On-device AI terminal"
 sources = ["src/monicoios"]
-main_module = "monicoios.app"
 requires = [
     "toga-ios",
     "microdot",
