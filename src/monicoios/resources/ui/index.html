@@ -51,6 +51,12 @@
   .inputrow .prompt { color: var(--grn); font-weight: 800; }
   #cmd { flex: 1; background: transparent; border: none; outline: none;
     color: var(--txt); font: inherit; font-size: 14px; }
+  /* quick-command chips (mobile: tap instead of typing) */
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .chips button { background: var(--panel); border: 1px solid var(--line);
+    color: var(--grn); font: inherit; font-size: 12px; padding: 8px 14px;
+    border-radius: 20px; cursor: pointer; letter-spacing: 1px; }
+  .chips button:active { transform: scale(.96); background: #0e1f13; }
   /* forensics */
   .scanbtn { display: block; width: 100%; padding: 14px; margin: 4px 0 14px;
     background: var(--grn); color: #000; border: none; border-radius: 10px;
@@ -85,7 +91,7 @@
 </head>
 <body>
 <header>
-  <div><span class="logo">MONICO</span><span class="ver">v4.3.0</span></div>
+  <div><span class="logo">MONICO</span><span class="ver">v4.4.0</span></div>
   <div id="healthdot"><span class="dot"></span><span id="healthtxt">…</span></div>
 </header>
 <main>
@@ -95,6 +101,7 @@
       <input id="cmd" type="text" autocomplete="off" autocapitalize="off"
              spellcheck="false" placeholder="type 'help' to begin">
     </div>
+    <div class="chips" id="chips"></div>
   </section>
   <section id="tab-forensics" class="tab">
     <button class="scanbtn" id="scanbtn" onclick="runScan()">▶ RUN FORENSIC SCAN</button>
@@ -135,11 +142,12 @@ const termOut=document.getElementById('term-out'), cmdEl=document.getElementById
 const hist=[]; let hi=-1;
 function print(html,cls){const d=document.createElement('div');if(cls)d.className=cls;d.innerHTML=html;
   termOut.appendChild(d);const t=document.getElementById('tab-terminal');t.scrollTop=t.scrollHeight;}
-async function sendCmd(){
-  const val=cmdEl.value.trim(); if(!val) return;
-  hist.push(val); hi=hist.length; cmdEl.value='';
+function runLine(val){
   print('$ '+esc(val),'cmd');
   if(val.toLowerCase()==='clear'){termOut.innerHTML='';return;}
+  return runEngine(val);
+}
+async function runEngine(val){
   try{
     const r=await fetch('/api/execute',{method:'POST',
       headers:{'Content-Type':'application/json'},body:JSON.stringify({command:val})});
@@ -147,13 +155,25 @@ async function sendCmd(){
     print(esc(d.output),'resp');
   }catch(e){print('BRIDGE_ERR: '+esc(e.message||e),'err');}
 }
+async function sendCmd(){
+  const val=cmdEl.value.trim(); if(!val) return;
+  hist.push(val); hi=hist.length; cmdEl.value='';
+  runLine(val);
+}
 cmdEl.addEventListener('keydown',e=>{
   if(e.key==='Enter')sendCmd();
   else if(e.key==='ArrowUp'){if(hi>0){hi--;cmdEl.value=hist[hi]||'';}e.preventDefault();}
   else if(e.key==='ArrowDown'){if(hi<hist.length-1){hi++;cmdEl.value=hist[hi];}else{hi=hist.length;cmdEl.value='';}e.preventDefault();}
 });
-print('MONICO iOS v4.3.0 — on-device engine ready.','sysmsg');
-print("Type 'help' for commands.",'sysmsg');
+/* quick-command chips for touch */
+const CHIPS=['help','health','sysinfo','uptime','ps','date'];
+document.getElementById('chips').innerHTML=CHIPS.map(c=>'<button>'+esc(c)+'</button>').join('');
+document.getElementById('chips').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  hist.push(b.textContent); hi=hist.length; runLine(b.textContent);
+});
+print('MONICO iOS v4.4.0 — on-device engine ready.','sysmsg');
+print("Type 'help' for commands, or tap a chip below.",'sysmsg');
 /* forensics */
 async function runScan(){
   const btn=document.getElementById('scanbtn'), out=document.getElementById('scan-out');

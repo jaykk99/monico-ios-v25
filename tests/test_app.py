@@ -68,7 +68,66 @@ def test_execute_directive(client):
     r = _run(client.post("/api/execute", body='{"command":"status"}',
                          headers={"Content-Type": "application/json"}))
     assert r.status_code == 200
-    assert "MONICO iOS V4.3.0" in r.json["output"]
+    # honest engine: unknown commands are errors, never faked output
+    assert r.json["output"].startswith("ERR: unknown command")
+
+
+def _post(client, command):
+    return _run(client.post("/api/execute", body='{"command":"%s"}' % command,
+                            headers={"Content-Type": "application/json"}))
+
+
+def test_new_commands_real_output(client):
+    r = _post(client, "uptime")
+    assert r.json["output"].startswith("UPTIME: ")
+    assert "h " in r.json["output"] and "m " in r.json["output"]
+    r = _post(client, "date")
+    assert r.json["output"].startswith("DATE: 20")
+    r = _post(client, "echo hello monico")
+    assert r.json["output"] == "hello monico"
+    r = _post(client, "echo")
+    assert r.json["output"].startswith("ERR: echo needs text")
+    r = _post(client, "cpu")
+    assert r.json["output"].startswith("CPU: ")
+    assert "%" in r.json["output"]
+    r = _post(client, "disk")
+    assert r.json["output"].startswith("DISK: ")
+    assert "GB" in r.json["output"]
+    r = _post(client, "ps 3")
+    out = r.json["output"]
+    assert out.startswith("PROCS: ")
+    assert len(out.splitlines()) == 4  # header + 3 rows
+    r = _post(client, "ps banana")
+    assert "usage" in r.json["output"].lower()
+    r = _post(client, "HELP")  # case-insensitive
+    assert "COMMANDS" in r.json["output"]
+
+
+def test_unknown_command_is_honest_error(client):
+    r = _post(client, "frobnicate-the-thing")
+    assert r.status_code == 200
+    assert r.json["output"].startswith("ERR: unknown command")
+
+
+def test_new_commands_degraded_on_ios(client, monkeypatch):
+    """ps/cpu/disk must degrade gracefully without psutil (iOS)."""
+    monkeypatch.setattr(app, "psutil", None)
+    assert "UNAVAILABLE" in app.engine.execute("cpu")
+    assert "UNAVAILABLE" in app.engine.execute("disk")
+    assert "ios wheels" in app.engine.execute("ps").lower()
+    # pure-python commands still work on iOS
+    assert app.engine.execute("uptime").startswith("UPTIME: ")
+    assert app.engine.execute("echo x") == "x"
+    assert app.engine.execute("date").startswith("DATE: ")
+
+
+def test_version_consistent_everywhere():
+    """VERSION, package, and app server must agree on the release."""
+    with open(os.path.join(REPO, "VERSION")) as fh:
+        v = fh.read().strip()
+    import monicoios
+    assert monicoios.__version__ == v
+    assert app.APP_VERSION == v
 
 
 def test_execute_help_command(client):
@@ -189,7 +248,7 @@ def test_briefcase_main_module_resolves():
     cfg = AppConfig(
         app_name="monicoios",
         formal_name="Monico",
-        version="4.3.0",
+        version="4.4.0",
         bundle="com.jaykk99.monicoios",
         description="test",
         sources=["src/monicoios"],

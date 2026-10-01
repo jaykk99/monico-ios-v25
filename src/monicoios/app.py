@@ -1,4 +1,4 @@
-"""Monico iOS v4.3.0 - on-device terminal app.
+"""Monico iOS v4.4.0 - on-device terminal app.
 
 Toga app that serves a local Microdot web server (bound to 127.0.0.1 only)
 and displays the terminal UI in a toga.WebView pointed at it.
@@ -29,7 +29,7 @@ except Exception:  # dev machines without a Toga GUI backend
     Pack = None
 
 APP_NAME = "Monico"
-APP_VERSION = "4.3.0"
+APP_VERSION = "4.4.0"
 HOST = "127.0.0.1"  # never expose the local engine on the LAN
 PORT = 5000
 MAX_CMD_LEN = 500
@@ -44,7 +44,16 @@ PREVIEW_PATH = os.path.join(BASE_DIR, "resources", "ui", "preview.html")
 # ---------------------------------------------------------------- engine
 
 class MonaCore:
-    """On-device directive engine (keyless, offline)."""
+    """On-device directive engine (keyless, offline).
+
+    Every command executes for real against this device: there is no
+    simulated output. Unknown commands return an honest error.
+    """
+
+    COMMANDS = (
+        "help", "health", "sysinfo", "about",
+        "uptime", "date", "echo", "cpu", "disk", "ps",
+    )
 
     def __init__(self):
         self.identity = f"MONICO iOS V{APP_VERSION}"
@@ -55,28 +64,92 @@ class MonaCore:
             return "ERR: empty directive."
         if len(text) > MAX_CMD_LEN:
             return f"ERR: directive too long ({len(text)} > {MAX_CMD_LEN})."
-        low = text.lower()
-        if low == "help":
-            return ("COMMANDS: help | health | sysinfo | about | clear\n"
-                    "Type anything else to run a directive through the "
-                    "on-device engine.")
-        if low == "health":
-            h = health_snapshot()
-            if h["cpu"] is None:
-                return f"HEALTH: {h['status']} (psutil unavailable on iOS)"
-            return (f"HEALTH: {h['status']} - CPU {h['cpu']}% / "
-                    f"MEM {h['memory']}%")
-        if low == "sysinfo":
-            s = system_snapshot()
-            if s["cpu_count"] is None:
-                return (f"SYS: {s['platform']} {s['arch']} | "
-                        "hardware stats unavailable on iOS")
-            return (f"SYS: {s['platform']} {s['arch']} | CPUs {s['cpu_count']} "
-                    f"| RAM {s['mem_total_gb']} GB | Disk {s['disk_total_gb']} GB")
-        if low == "about":
-            return (f"{self.identity} - on-device terminal. "
-                    "No cloud, no keys, no network.")
-        return f"[ENGINE] {self.identity}: Directive '{text}' executed."
+        parts = text.split(None, 1)
+        cmd, arg = parts[0].lower(), (parts[1] if len(parts) > 1 else "")
+        handler = getattr(self, f"_cmd_{cmd}", None)
+        if handler is None:
+            return (f"ERR: unknown command '{parts[0]}'. "
+                    "Type 'help' for commands.")
+        try:
+            return handler(arg)
+        except Exception as exc:  # never 500 the local UI on a bad command
+            return f"ERR: {cmd} failed: {exc}"
+
+    # -- commands ----------------------------------------------------
+
+    def _cmd_help(self, _arg):
+        return ("COMMANDS: help | health | sysinfo | about | uptime | date | "
+                "echo <text> | cpu | disk | ps [n] | clear\n"
+                "Every command runs on this device. No cloud, no keys.")
+
+    def _cmd_health(self, _arg):
+        h = health_snapshot()
+        if h["cpu"] is None:
+            return f"HEALTH: {h['status']} (psutil unavailable on iOS)"
+        return (f"HEALTH: {h['status']} - CPU {h['cpu']}% / "
+                f"MEM {h['memory']}%")
+
+    def _cmd_sysinfo(self, _arg):
+        s = system_snapshot()
+        if s["cpu_count"] is None:
+            return (f"SYS: {s['platform']} {s['arch']} | "
+                    "hardware stats unavailable on iOS")
+        return (f"SYS: {s['platform']} {s['arch']} | CPUs {s['cpu_count']} "
+                f"| RAM {s['mem_total_gb']} GB | Disk {s['disk_total_gb']} GB")
+
+    def _cmd_about(self, _arg):
+        return (f"{self.identity} - on-device terminal. "
+                "No cloud, no keys, no network.")
+
+    def _cmd_uptime(self, _arg):
+        secs = (datetime.now() - BOOT_TIME).total_seconds()
+        return f"UPTIME: {_fmt_duration(secs)}"
+
+    def _cmd_date(self, _arg):
+        return "DATE: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    def _cmd_echo(self, arg):
+        if not arg:
+            return "ERR: echo needs text (usage: echo <text>)."
+        return arg
+
+    def _cmd_cpu(self, _arg):
+        h = health_snapshot()
+        if h["cpu"] is None:
+            return "CPU: UNAVAILABLE (psutil unavailable on iOS)"
+        return f"CPU: {h['cpu']}% / MEM {h['memory']}% ({h['status']})"
+
+    def _cmd_disk(self, _arg):
+        if psutil is None:
+            return "DISK: UNAVAILABLE (psutil unavailable on iOS)"
+        disk = psutil.disk_usage("/")
+        return (f"DISK: {disk.used / 1e9:.1f} / {disk.total / 1e9:.1f} GB "
+                f"used ({disk.free / 1e9:.1f} GB free)")
+
+    def _cmd_ps(self, arg):
+        n = 8
+        if arg:
+            try:
+                n = max(1, min(20, int(arg)))
+            except ValueError:
+                return "ERR: ps usage: ps [n] (1-20)."
+        snap = forensics_snapshot(top_n=n)
+        if snap["process_count"] == 0 and "unavailable" in snap:
+            return f"PS: {snap['unavailable']}"
+        lines = [f"PROCS: {snap['process_count']} total, top {n} by CPU:"]
+        for p in snap["top_processes"]:
+            name = (p.get("name") or "?")[:18]
+            lines.append(f"  {p['pid']:>6}  {p['cpu_percent']:>5}%  "
+                         f"{p['memory_percent']:>5}%  {name}")
+        return "\n".join(lines)
+
+
+def _fmt_duration(seconds):
+    """'93784.2' -> '26h 3m 4s'."""
+    s = int(seconds)
+    h, s = divmod(s, 3600)
+    m, s = divmod(s, 60)
+    return f"{h}h {m}m {s}s"
 
 
 # ------------------------------------------------------------ snapshots

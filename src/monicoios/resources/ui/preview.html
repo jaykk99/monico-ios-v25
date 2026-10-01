@@ -43,6 +43,22 @@
   .card .ico{font-size:28px;margin-bottom:12px}
   .card h3{font-size:16px;margin-bottom:8px;color:var(--grn)}
   .card p{font-size:14px;color:var(--mut)}
+  /* command cheat sheet */
+  .cmds{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+  .cmd{background:#000;border:1px solid var(--line);border-radius:12px;padding:12px 16px;
+    font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--grn);cursor:default}
+  .cmd small{display:block;color:var(--mut);font-family:inherit;font-size:11px;margin-top:2px}
+  .cmds-note{color:var(--mut);font-size:13px;margin-top:14px}
+  /* architecture diagram */
+  .arch{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;align-items:stretch;margin-top:8px}
+  .node{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 14px;text-align:center}
+  .node .ico{font-size:26px}
+  .node h4{color:var(--grn);font-size:14px;margin:8px 0 4px}
+  .node p{font-size:12px;color:var(--mut)}
+  .arrow{display:flex;align-items:center;justify-content:center;color:var(--grn);
+    font-size:22px;padding:6px;min-width:32px}
+  @media(min-width:720px){.arch{display:flex}}
+  @media(max-width:719px){.arrow{transform:rotate(90deg)}}
   /* build */
   .build{padding:0 0 72px}
   .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
@@ -63,7 +79,7 @@
 <div class="wrap">
   <header class="nav">
     <div class="brand">MONICO</div>
-    <div class="badge">iOS v4.3.0 · on-device · keyless</div>
+    <div class="badge">iOS v4.4.0 · on-device · keyless</div>
   </header>
 
   <section class="hero">
@@ -71,7 +87,8 @@
       <h1>An AI terminal that lives <span class="g">on your iPhone.</span></h1>
       <p class="lede">Monico runs its directive engine, forensic scanner, and health guard
         entirely on-device. No API keys, no cloud calls, no accounts — open the app
-        and it works, even offline.</p>
+        and it works, even offline. Every command is real: processes, disk, and
+        system stats are read from the device itself.</p>
       <div class="cta">
         <a class="btn solid" href="#build">Build for iOS</a>
         <a class="btn ghost" href="https://github.com/jaykk99/monico-ios-v25">GitHub</a>
@@ -90,13 +107,50 @@
   </section>
 
   <section class="features">
+    <h2>Try it right here</h2>
+    <p class="sub">The phone above is running the actual app against this device. Type or tap any of these in its terminal:</p>
+    <div class="cmds">
+      <div class="cmd">help<small>list commands</small></div>
+      <div class="cmd">health<small>CPU/memory guard</small></div>
+      <div class="cmd">sysinfo<small>device hardware</small></div>
+      <div class="cmd">uptime<small>app uptime</small></div>
+      <div class="cmd">date<small>device clock</small></div>
+      <div class="cmd">echo hi<small>echo text back</small></div>
+      <div class="cmd">cpu<small>live load snapshot</small></div>
+      <div class="cmd">disk<small>disk usage</small></div>
+      <div class="cmd">ps 5<small>top 5 processes</small></div>
+      <div class="cmd">clear<small>clear terminal</small></div>
+    </div>
+    <p class="cmds-note">Unknown commands return an honest error — the engine never fakes output.</p>
+  </section>
+
+  <section class="features">
+    <h2>How it fits together</h2>
+    <p class="sub">One local loop, no network hop anywhere.</p>
+    <div class="arch">
+      <div class="node"><div class="ico">📱</div><h4>Toga WebView</h4><p>Renders the terminal UI inside the iOS app</p></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="ico">🌐</div><h4>Microdot</h4><p>Local server on 127.0.0.1:5000 — never the LAN</p></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="ico">⌁</div><h4>MonaCore</h4><p>Keyless directive engine, real device commands</p></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="ico">⚙</div><h4>psutil</h4><p>Real CPU, memory, processes, disk (desktop/CI)</p></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="ico">📦</div><h4>Briefcase</h4><p>Packages everything into the iOS IPA on CI</p></div>
+    </div>
+  </section>
+
+  <section class="features">
     <h2>What it does</h2>
     <p class="sub">Three tabs, one local engine. Everything below runs against this device's real APIs.</p>
     <div class="grid">
       <div class="card"><div class="ico">⌁</div><h3>Terminal</h3>
-        <p>Command input with history, built-in <code>help</code>, <code>health</code>,
-        <code>sysinfo</code> commands, and an on-device directive engine. Input is
-        length-capped and output is HTML-escaped.</p></div>
+        <p>Command input with history and tap-to-run chips, ten real on-device
+        commands (<code>help</code>, <code>health</code>, <code>sysinfo</code>,
+        <code>uptime</code>, <code>date</code>, <code>echo</code>,
+        <code>cpu</code>, <code>disk</code>, <code>ps</code>), and an honest
+        unknown-command error. Input is length-capped and output is
+        HTML-escaped.</p></div>
       <div class="card"><div class="ico">◉</div><h3>Forensics</h3>
         <p>Real on-device scan: live process table ranked by CPU, network connection
         count, and disk usage — powered by psutil, nothing leaves the phone.</p></div>
@@ -122,7 +176,9 @@ python app.py   # → http://127.0.0.1:5000</pre></div>
         <pre>pip install pytest
 pytest tests/ -q</pre></div>
       <div class="step"><div class="n">03 — SHIP</div><h3>Build the IPA</h3>
-        <p>macOS + Xcode, or push and let CI build it.</p>
+        <p>macOS + Xcode, or push and let CI build it — every push runs the
+        <a href="https://github.com/jaykk99/monico-ios-v25/actions" style="color:var(--grn)">iOS Release Build</a>
+        workflow and uploads the <code>Monico-iOS-IPA</code> artifact.</p>
         <pre>pip install briefcase
 briefcase create ios
 briefcase build ios</pre></div>
@@ -130,7 +186,7 @@ briefcase build ios</pre></div>
   </section>
 
   <footer>
-    <span>Monico iOS v4.3.0 — on-device terminal</span>
+    <span>Monico iOS v4.4.0 — on-device terminal</span>
     <span><a href="https://github.com/jaykk99/monico-ios-v25">github.com/jaykk99/monico-ios-v25</a></span>
   </footer>
 </div>

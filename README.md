@@ -3,14 +3,16 @@
 **Monico terminal for iPhone/iPad** — a Python/Toga mobile app with an embedded
 local web server (Microdot) serving a tabbed terminal UI (Terminal, Forensics, System).
 
-## Status: v4.3.0 (Briefcase/Toga app)
+## Status: v4.4.0 (Briefcase/Toga app)
 
 ## What it actually is
 - `src/monicoios/app.py` — Toga app: opens a `toga.WebView` pointed at a local
   Microdot server bound to **127.0.0.1:5000** (never exposed on the LAN).
 - `POST /api/execute` — sends a command string to the on-device `MonaCore`
-  engine. Built-in commands: `help`, `health`, `sysinfo`, `about`, `clear`.
-  Input is length-capped (500 chars) and all output is HTML-escaped.
+  engine. Real commands: `help`, `health`, `sysinfo`, `about`, `uptime`,
+  `date`, `echo <text>`, `cpu`, `disk`, `ps [n]`. Unknown commands return
+  an honest `ERR` (the engine never fakes output). Input is length-capped
+  (500 chars) and all output is HTML-escaped in the UI.
   No external AI model call; works fully offline and keyless.
 - `GET /api/health` — CPU/memory via `psutil`; `OPTIMAL` under 25% CPU,
   `THROTTLING` above (iOS thermal guard).
@@ -29,9 +31,8 @@ local web server (Microdot) serving a tabbed terminal UI (Terminal, Forensics, S
 ```bash
 pip install -r requirements.txt
 python app.py        # serves the UI at http://127.0.0.1:5000
-python app.py        # without a Toga GUI backend it just serves the web UI
 python health_guard.py
-pytest tests/ -q     # 14 tests: API routes, UI assets, health guard
+pytest tests/ -q     # 20 tests: API routes, UI assets, health guard
 ```
 
 Open http://127.0.0.1:5000/preview for the polished showcase.
@@ -52,7 +53,11 @@ packages the Python code **and** the `resources/ui/` HTML assets into the
 app bundle (verified via a Linux `briefcase create` packaging run).
 
 A GitHub Actions workflow (`.github/workflows/ios_build.yml`) builds the IPA
-on `macos-latest` on every push.
+on `macos-latest` on every push and uploads it as the `Monico-iOS-IPA`
+artifact — grab the latest from the repo's Actions tab.
+**macOS + Xcode + an Apple Developer account are required** to install the
+built IPA on a physical iPhone/iPad (or run it in the Xcode simulator);
+ad-hoc distribution or TestFlight handles signing.
 
 ## Files
 | File | Purpose |

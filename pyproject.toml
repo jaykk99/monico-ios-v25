@@ -1,7 +1,7 @@
 [tool.briefcase]
 project_name = "MonicoiOS"
 bundle = "com.jaykk99.monicoios"
-version = "4.3.0"
+version = "4.4.0"
 url = "https://github.com/jaykk99/monico-ios-v25"
 license = "MIT"
 
