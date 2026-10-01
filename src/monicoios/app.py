@@ -14,7 +14,11 @@ import platform
 import threading
 from datetime import datetime
 
-import psutil
+try:
+    import psutil
+except ImportError:  # iOS wheels don't exist for psutil; degrade gracefully
+    psutil = None
+
 from microdot import Microdot, Response
 
 try:
@@ -58,10 +62,15 @@ class MonaCore:
                     "on-device engine.")
         if low == "health":
             h = health_snapshot()
+            if h["cpu"] is None:
+                return f"HEALTH: {h['status']} (psutil unavailable on iOS)"
             return (f"HEALTH: {h['status']} - CPU {h['cpu']}% / "
                     f"MEM {h['memory']}%")
         if low == "sysinfo":
             s = system_snapshot()
+            if s["cpu_count"] is None:
+                return (f"SYS: {s['platform']} {s['arch']} | "
+                        "hardware stats unavailable on iOS")
             return (f"SYS: {s['platform']} {s['arch']} | CPUs {s['cpu_count']} "
                     f"| RAM {s['mem_total_gb']} GB | Disk {s['disk_total_gb']} GB")
         if low == "about":
@@ -73,6 +82,9 @@ class MonaCore:
 # ------------------------------------------------------------ snapshots
 
 def health_snapshot():
+    if psutil is None:
+        return {"cpu": None, "memory": None, "status": "UNAVAILABLE",
+                "cpu_limit": CPU_LIMIT}
     cpu = psutil.cpu_percent(interval=0.1)
     mem = psutil.virtual_memory().percent
     status = "OPTIMAL" if cpu < CPU_LIMIT else "THROTTLING"
@@ -81,6 +93,22 @@ def health_snapshot():
 
 
 def system_snapshot():
+    if psutil is None:
+        return {
+            "platform": platform.system(),
+            "platform_release": platform.release(),
+            "arch": platform.machine(),
+            "cpu_count": None,
+            "cpu_physical": None,
+            "mem_total_gb": None,
+            "mem_used_gb": None,
+            "disk_total_gb": None,
+            "disk_used_gb": None,
+            "disk_free_gb": None,
+            "python": platform.python_version(),
+            "uptime_s": int((datetime.now() - BOOT_TIME).total_seconds()),
+            "boot_time": None,
+        }
     vm = psutil.virtual_memory()
     disk = psutil.disk_usage("/")
     uptime = (datetime.now() - BOOT_TIME).total_seconds()
@@ -102,7 +130,20 @@ def system_snapshot():
 
 
 def forensics_snapshot(top_n=8):
-    """Real on-device forensic scan via psutil (no network, no keys)."""
+    """Real on-device forensic scan via psutil (no network, no keys).
+
+    Returns a degraded payload when psutil is unavailable (iOS).
+    """
+    if psutil is None:
+        return {
+            "scanned_at": datetime.now().isoformat(timespec="seconds"),
+            "process_count": 0,
+            "top_processes": [],
+            "network_connections": -1,
+            "disk_used_gb": None,
+            "disk_total_gb": None,
+            "unavailable": "psutil has no iOS wheels; scan disabled on device",
+        }
     procs = []
     for p in psutil.process_iter(["pid", "name", "cpu_percent", "memory_percent"]):
         try:

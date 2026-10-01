@@ -67,6 +67,9 @@ on `macos-latest` on every push.
 
 ## Notes
 - No API keys required; everything runs on-device.
+- `psutil` ships no iOS wheels, so it is a desktop-only dependency: on iOS
+  the health/forensics endpoints degrade gracefully (`UNAVAILABLE`) instead
+  of crashing. Desktop and CI tests run with psutil installed.
 - No Swift/SwiftUI in this repo: the "native" app is Python via
   BeeWare Toga/Briefcase, rendered in a `WebView`. It cannot be compiled
   or run on iOS without macOS + Xcode (or the CI-built IPA).

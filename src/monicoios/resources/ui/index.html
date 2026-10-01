@@ -161,10 +161,12 @@ async function runScan(){
   try{
     const r=await fetch('/api/forensics'); const d=await r.json();
     let h='<h2 class="sect">SCAN '+esc(d.scanned_at)+'</h2>';
+    if(d.unavailable){h+='<p class="err" style="font-size:12px">'+esc(d.unavailable)+'</p>';out.innerHTML=h;return;}
+    const gb=v=>v==null?'–':v+' GB';
     h+='<div class="kv"><span class="k">PROCESSES</span><span class="v">'+d.process_count+'</span></div>';
     h+='<div class="kv"><span class="k">NET CONNECTIONS</span><span class="v">'+
        (d.network_connections<0?'restricted':d.network_connections)+'</span></div>';
-    h+='<div class="kv"><span class="k">DISK</span><span class="v">'+d.disk_used_gb+' / '+d.disk_total_gb+' GB</span></div>';
+    h+='<div class="kv"><span class="k">DISK</span><span class="v">'+gb(d.disk_used_gb)+' / '+gb(d.disk_total_gb)+'</span></div>';
     h+='<h2 class="sect">TOP PROCESSES BY CPU</h2><table class="proc"><tr><th>PID</th><th>NAME</th><th style="text-align:right">CPU%</th><th style="text-align:right">MEM%</th></tr>';
     for(const p of d.top_processes){
       h+='<tr><td>'+p.pid+'</td><td>'+esc(p.name||'?')+'</td><td class="num">'+p.cpu_percent+'</td><td class="num">'+p.memory_percent+'</td></tr>';
@@ -177,20 +179,22 @@ async function runScan(){
 async function refreshSystem(){
   try{
     const [s,h]=await Promise.all([(await fetch('/api/system')).json(),(await fetch('/api/health')).json()]);
+    const na=v=>v==null?'–':v;
+    const pct=v=>v==null?'–':v+'%';
     document.getElementById('syscards').innerHTML=
       card('PLATFORM',esc(s.platform)+' '+esc(s.platform_release))+
       card('ARCH',esc(s.arch))+
-      card('CPU CORES',s.cpu_count+' ('+s.cpu_physical+' phys)')+
-      card('RAM',s.mem_used_gb+' / '+s.mem_total_gb+' GB')+
-      card('DISK FREE',s.disk_free_gb+' GB')+
+      card('CPU CORES',s.cpu_count==null?'–':s.cpu_count+' ('+s.cpu_physical+' phys)')+
+      card('RAM',s.mem_total_gb==null?'–':s.mem_used_gb+' / '+s.mem_total_gb+' GB')+
+      card('DISK FREE',s.disk_free_gb==null?'–':s.disk_free_gb+' GB')+
       card('PYTHON',esc(s.python));
-    document.getElementById('cpupct').textContent=h.cpu+'%';
-    document.getElementById('cpubar').style.width=Math.min(100,h.cpu)+'%';
-    document.getElementById('mempct').textContent=h.memory+'%';
-    document.getElementById('membar').style.width=Math.min(100,h.memory)+'%';
+    document.getElementById('cpupct').textContent=pct(h.cpu);
+    document.getElementById('cpubar').style.width=(h.cpu||0)+'%';
+    document.getElementById('mempct').textContent=pct(h.memory);
+    document.getElementById('membar').style.width=(h.memory||0)+'%';
     document.getElementById('sysdetail').innerHTML=
       '<h2 class="sect">DETAIL</h2>'+
-      '<div class="kv"><span class="k">BOOT TIME</span><span class="v">'+esc(s.boot_time)+'</span></div>'+
+      '<div class="kv"><span class="k">BOOT TIME</span><span class="v">'+esc(na(s.boot_time))+'</span></div>'+
       '<div class="kv"><span class="k">APP UPTIME</span><span class="v">'+s.uptime_s+'s</span></div>'+
       '<div class="kv"><span class="k">GUARD STATUS</span><span class="v">'+esc(h.status)+'</span></div>';
   }catch(e){/* offline - keep last values */}
@@ -202,7 +206,7 @@ async function pollHealthDot(){
     const h=await (await fetch('/api/health')).json();
     const el=document.getElementById('healthdot');
     el.classList.toggle('warn',h.status!=='OPTIMAL');
-    document.getElementById('healthtxt').textContent=h.status+' '+h.cpu+'%';
+    document.getElementById('healthtxt').textContent=h.status+(h.cpu==null?'':' '+h.cpu+'%');
   }catch(e){document.getElementById('healthtxt').textContent='OFFLINE';}
 }
 setInterval(pollHealthDot,5000); pollHealthDot();

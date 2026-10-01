@@ -13,8 +13,10 @@ main_module = "monicoios.app"
 requires = [
     "toga-ios",
     "microdot",
-    "psutil",
 ]
+# NOTE: psutil is intentionally NOT in the iOS requires list - it ships no
+# iOS wheels. The app degrades gracefully without it (health/forensics show
+# UNAVAILABLE); desktop dev installs psutil via requirements.txt.
 supported_devices = ["iPhone", "iPad"]
 
 [tool.briefcase.app.monicoios.ios]

@@ -180,3 +180,17 @@ def test_health_guard():
 def test_server_bound_to_localhost():
     assert app.HOST == "127.0.0.1"
     assert app.PORT == 5000
+
+
+def test_degraded_mode_without_psutil(monkeypatch):
+    """Simulates iOS where psutil has no wheels: endpoints must not 500."""
+    monkeypatch.setattr(app, "psutil", None)
+    assert app.health_snapshot()["status"] == "UNAVAILABLE"
+    assert app.health_snapshot()["cpu"] is None
+    s = app.system_snapshot()
+    assert s["cpu_count"] is None and s["platform"]
+    f = app.forensics_snapshot()
+    assert f["process_count"] == 0 and "unavailable" in f
+    assert "unavailable" in app.engine.execute("health").lower() or \
+        "UNAVAILABLE" in app.engine.execute("health")
+    assert "unavailable" in app.engine.execute("sysinfo").lower()
